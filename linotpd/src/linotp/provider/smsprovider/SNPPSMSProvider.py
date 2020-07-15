@@ -52,9 +52,7 @@ class SNPPSMSProvider(ISMSProvider):
             raise RuntimeError("SNPP Error: no snpp library installed")
 
         self.config = {}
-        
-        # limit provider to only support iso latin 1 encoding
-        self.target_encoding = 'ISO8859-1'
+
 
     def getConfigDescription(self):
         """
@@ -63,10 +61,25 @@ class SNPPSMSProvider(ISMSProvider):
                  'port': "server port number - default:444",
                  'username': 'connection username',
                  'password': 'connection password',
+                 'subject': 'message subject',
                  }
 
         return iface
 
+    
+    def loadConfig(self, configDict):
+        """
+        load the provider configuration from the config dict
+        """
+        self.config = configDict
+
+        self.server = str(self.config['server'])
+        self.port = int(self.config.get('port', 444))
+        self.username = self.config.get('username', None)
+        self.password = self.config.get('password', None)
+        self.subject = self.config.get('subject', None)
+        
+        
     def _submitMessage(self, phone, message):
         """
         submit the message to the SNPP Server
@@ -92,9 +105,12 @@ class SNPPSMSProvider(ISMSProvider):
             log.debug("login with %s %s", self.username, self.password)
             if self.username != None:
                 client.login(self.username, self.password)
-
-            # now send the message
+                
             client.pager(phone)
+            
+            if self.subject != None:
+                client.subject(self.subject)
+                
             client.message(message)
             client.send()
             
@@ -112,21 +128,6 @@ class SNPPSMSProvider(ISMSProvider):
 
         return result
 
-    def loadConfig(self, configDict):
-        """
-        load the provider configuration from the config dict
-        """
-        self.config = configDict
-
-        self.server = str(self.config['server'])
-        self.port = int(self.config.get('port', 444))
-        self.username = self.config.get('username', None)
-        if self.username != None:
-            self.username = str(self.username).encode(self.target_encoding, 'ignore')
-        self.password = self.config.get('password', None)
-        if self.password != None:
-            self.password = str(self.username).encode(self.target_encoding, 'ignore')
-        
 
 def main(phone, message, config):
 
@@ -146,16 +147,17 @@ if __name__ == "__main__":
     # for commandline testing
     parser = argparse.ArgumentParser()
     parser.add_argument("--phone", help="target phone number")
-    parser.add_argument("--message", help="greeting message")
+    parser.add_argument("--message", help="target message")
     parser.add_argument("--server", help="server address")
     parser.add_argument("--port", help="port number")
     parser.add_argument("--password", help="login password")
     parser.add_argument("--username", help="login username")
+    parser.add_argument("--subject", help="message subject")
 
     args = parser.parse_args()
 
     config = {}
-    attrs = ['phone', 'message',
+    attrs = ['phone', 'message', 'subject',
              'server', 'port', 
              'username', 'password']
 
