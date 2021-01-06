@@ -321,7 +321,8 @@ class dbObject():
 
         if 'sqlite' not in sqlConnect:
             args['pool_timeout'] = 30
-            args['connect_args'] = { 'connect_timeout': timeout}
+            if 'mysql' in sqlConnect:
+                args['connect_args'] = { 'connect_timeout': timeout}
 
         self.engine = create_engine(sqlConnect, **args)
 
